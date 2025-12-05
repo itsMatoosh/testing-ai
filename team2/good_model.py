@@ -1,6 +1,17 @@
+import numpy as np
 import pandas as pd
 import sklearn
 import pickle
+
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import accuracy_score
+import onnxruntime as rt
+import onnx
+from skl2onnx.common.data_types import FloatTensorType
+from skl2onnx import to_onnx
+from skl2onnx import convert_sklearn
+
 
 """
 Since we dont have actual data who commited fraud, only who has been checked. 
@@ -37,13 +48,23 @@ class GoodModel:
 
     def __init__(self, bad_column_names, X, y):
         self.bad_column_names = bad_column_names
+        self.good_cols = [i for i, col in enumerate(X.columns) if col not in self.bad_column_names]
         self.model = self.train(X, y)
 
     def train(self, X, y):
-        X_good = X.drop(columns=self.bad_column_names)
+        good_cols = self.good_cols
+        preprocess = ColumnTransformer([
+            ("keep", "passthrough", good_cols),
+        ],
+        remainder="drop"
+        )
         model = sklearn.ensemble.RandomForestClassifier(n_estimators=100, max_depth=5, random_state=42)
-        model.fit(X_good, y)
-        return model
+        pipeline = Pipeline(steps=[
+            ('preprocess', preprocess),
+            ('classifier', model)
+        ])
+        pipeline.fit(X, y)
+        return pipeline
 
     def predict(self, X):
         X_good = X.drop(columns=self.bad_column_names)
@@ -51,7 +72,7 @@ class GoodModel:
 
     def test(self, X, y):
         predictions = self.predict(X)
-        accuracy = sklearn.metrics.accuracy_score(y, predictions)
+        accuracy = accuracy_score(y, predictions)
         print(f"Good Model accuracy: {accuracy}")
         return accuracy
 
@@ -64,16 +85,35 @@ if __name__ == '__main__':
     cols_names = info_df.loc[cols_ids]['Feature (nl)'].values.tolist()
     cols_names = [n for n in cols_names if n not in ['competentie_overtuigen_en_beïnvloeden', 'contacten_onderwerp_boolean_financiële_situatie', 'contacten_onderwerp_financiële_situatie'] ]
 
-    m = GoodModel(cols_names,
-                  pd.read_csv('data/local_train.csv').drop(columns=["Ja", "Nee", "checked"]),
-                  pd.read_csv('data/local_train.csv')["checked"])
+    X_train = pd.read_csv('data/local_train.csv').drop(columns=["Ja", "Nee", "checked"]).astype(np.float32)
+    y_train = pd.read_csv('data/local_train.csv')["checked"]
 
+    m = GoodModel(cols_names, X_train, y_train)
+    t = m.model.named_steps['preprocess'].transform(X_train)
+    print(t.shape)
+    print(X_train.shape)
+    df = pd.read_csv('data/local_train.csv').drop(columns=["Ja", "Nee", "checked"])
     with open('models/good_model.pkl', 'wb') as f:
         pickle.dump(m, f)
 
-    X_test = pd.read_csv('data/local_test.csv').drop(columns=["Ja", "Nee", "checked"])
+    onnx_model = convert_sklearn(
+        m.model,
+        initial_types=[('X', FloatTensorType([None, len(df.columns)]))],
+        target_opset=12
+    )
+
+    onnx.save_model(onnx_model, 'models/good_model.onnx')
+
+    loaded_model = rt.InferenceSession('models/good_model.onnx')
+
+    X_test = pd.read_csv('data/local_test.csv').drop(columns=["Ja", "Nee", "checked"]).astype(np.float32)
     y_test = pd.read_csv('data/local_test.csv')["checked"]
+
     print(m.test(X_test, y_test))
 
+    y_pred_onnx = loaded_model.run(None, {'X': X_test.astype(np.float32).to_numpy()})[0]
+    accuracy_onnx = accuracy_score(y_test, y_pred_onnx)
+
+    print(f"ONNX Model accuracy: {accuracy_onnx}")
 
 
