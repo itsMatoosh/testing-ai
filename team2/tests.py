@@ -64,11 +64,11 @@ if __name__ == "__main__":
         diffs.append(abs(greater_positive - smaller_positive))
     print('Data average absolute difference:', np.mean(diffs))
 
-    model = rt.InferenceSession('models/model_1_t1.onnx')
+    model = rt.InferenceSession('../team1/model_1.onnx')
     diff1 = test_model(model, cols_names, test_df)
     print('Model 1 average absolute difference:', diff1)
 
-    model = rt.InferenceSession('models/model_2_t1.onnx')
+    model = rt.InferenceSession('../team1/model_2.onnx')
     diff2 = test_model(model, cols_names, test_df)
     print('Model 2 average absolute difference:', diff2)
 
