@@ -23,3 +23,32 @@ The bad model was trained using the full feature set, including the Dutch proxy 
 - Set belemmering_psychische_problemen=1 – Marking that someone has psychological problems should not, in itself, alter fraud risk, so this metamorphic change probes whether the model unfairly penalizes mental health conditions.
 
 - Increase relatie_kind_huidige_aantal +1 – Adding one child to the household without changing income, behavior, or claims should not drastically change the fraud score, making this a metamorphic test for unjustified penalization of parenthood or larger families.
+
+### Testing: Partition Tests
+The partition tests that are part of the susite are:
+- Partition by district risk group (e.g., low-mobility wijken vs high-profile wijken)
+We expect average predictions across these partitions to be similar for otherwise comparable populations, and differences would indicate postcode-based proxy discrimination.
+- Partition Dutch-language versus non-Dutch-language speakers (persoonlijke_eigenschappen_spreektaal / NL-levels)
+We expect outcomes in these partitions to remain equitable when controlling for socioeconomic variables, so a systematic gap would reveal linguistic or migration-based bias.
+- Partition by presence/absence of children (relatie_kind_huidige_aantal >0 vs =0)
+Fraud prediction across parents vs non-parents should not diverge strongly unless claim structure requires it, making partition comparison suitable for fairness evaluation.
+- Partition by engagement level (afspraak_* and contacten_* interaction frequency)
+Highly engaged vs minimally engaged partitions may differ realistically, but overly large differences suggest the model rewards bureaucracy compliance instead of fraud likelihood.
+- Partition by reintegration participation (deelname_*, instrument_*, ontheffing_*)
+Individuals in reintegration programs versus those exempt or inactive should not show drastic prediction separation unless grounded in outcome evidence, making this a validation partition.
+- Partition by age groups (persoon_leeftijd_bij_onderzoek bins)
+You would expect smooth, not step-wise or erratic, differences across age partitions; sharp drops or spikes reveal potential implicit age discrimination.
+
+The partitions are indicated in this table:
+
+| Partition 1                             | Partition 2                             | Expected Fair Behavior                                                 | Bias Signal (Unfair Behavior)                  |
+| --------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------- |
+| `adres_recentste_wijk_charlois=1`       | `adres_recentste_wijk_kralingen_c=1`    | Predictions should be similar across wijken when characteristics match | Large difference → postcode proxy bias         |
+| `adres_aantal_verschillende_wijken ≤ 1` | `adres_aantal_verschillende_wijken ≥ 4` | Only gradual trend expected, not a jump                                | Sharp separation → penalizing housing mobility |
+| `relatie_kind_huidige_aantal > 0`       | `relatie_kind_huidige_aantal = 0`       | Fraud risk should not rise simply for having children                  | Penalizing parenthood indicates unfair impact  |
+| Top 20% of `contacten_*` count          | Bottom 20% of `contacten_*` count       | Interaction level shouldn't dominate predictions                       | Big gap → compliance bias instead of risk      |
+| `deelname_act_reintegratieladder_* > 0` | `deelname_act_reintegratieladder_* = 0` | Slight decrease acceptable if engaged                                  | Strong drop indicates reward-based distortion  |
+| `persoon_leeftijd_bij_onderzoek ≤ 30`   | `persoon_leeftijd_bij_onderzoek ≥ 55`   | Age differences should form smooth gradients                           | Step-like jump → age discrimination            |
+
+
+Note that we could also partition the data by variables such as persoonlijke_eigenschappen_spreektaal or persoon_geslacht_vrouw, but these would capture the same fairness aspects already tested through the metamorphic relations, so we omitted them to avoid redundancy.
