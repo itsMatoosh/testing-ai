@@ -40,8 +40,15 @@ def check_feature_importance(model, feature_names):
 
 if __name__ == "__main__":
     # ,Ja,Nee,checked
-    X = pd.read_csv('data/local_train.csv').drop(columns=["Ja", "Nee", "checked"]).astype(np.float32)
-    y = pd.read_csv('data/local_train.csv')["checked"]
+    df = pd.read_csv('data/local_train.csv')
+    n_true = df['checked'].value_counts().get(1, 0)
+    df_balanced = (
+        df.groupby('checked')
+        .sample(n=n_true, random_state=42)
+        .reset_index(drop=True)
+    )
+    X = df_balanced.drop(columns=["Ja", "Nee", "checked"]).astype(np.float32)
+    y = df_balanced["checked"]
     model = bad_model(X, y)
     with open('models/bad_model.pkl', 'wb') as f:
         pickle.dump(model, f)
@@ -62,8 +69,14 @@ if __name__ == "__main__":
     check_feature_importance(model, feature_names)
 
     onnx.save_model(onnx_model, 'models/bad_model.onnx')
+
+    X_test = pd.read_csv('data/local_test.csv').drop(columns=["Ja", "Nee", "checked"])
+    y_test = pd.read_csv('data/local_test.csv')["checked"]
+
     loaded_model = rt.InferenceSession('models/bad_model.onnx')
 
     y_pred_onnx = loaded_model.run(None, {'X': X_test.astype(np.float32).to_numpy()})[0]
+    print(sum(y_pred_onnx))
+    print(max(y_pred_onnx))
     accuracy_onnx = accuracy_score(y_test, y_pred_onnx)
     print(f"ONNX Model accuracy: {accuracy_onnx}")

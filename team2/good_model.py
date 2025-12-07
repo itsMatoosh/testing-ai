@@ -85,8 +85,19 @@ if __name__ == '__main__':
     cols_names = info_df.loc[cols_ids]['Feature (nl)'].values.tolist()
     cols_names = [n for n in cols_names if n not in ['competentie_overtuigen_en_beïnvloeden', 'contacten_onderwerp_boolean_financiële_situatie', 'contacten_onderwerp_financiële_situatie'] ]
 
-    X_train = pd.read_csv('data/local_train.csv').drop(columns=["Ja", "Nee", "checked"]).astype(np.float32)
-    y_train = pd.read_csv('data/local_train.csv')["checked"]
+
+    df = pd.read_csv('data/local_train.csv')
+    n_true = df['checked'].value_counts().get(1, 0)
+    df_balanced = (
+        df.groupby('checked')
+        .sample(n=n_true, random_state=42)
+        .reset_index(drop=True)
+    )
+    X = df_balanced.drop(columns=["Ja", "Nee", "checked"]).astype(np.float32)
+    y = df_balanced["checked"]
+
+    X_train = df_balanced.drop(columns=["Ja", "Nee", "checked"]).astype(np.float32)
+    y_train = df_balanced["checked"]
 
     m = GoodModel(cols_names, X_train, y_train)
     t = m.model.named_steps['preprocess'].transform(X_train)

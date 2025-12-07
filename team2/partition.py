@@ -1,6 +1,6 @@
 
 
-def partition(data, column_name, threshold):
+def partition(data, column_name, threshold=None):
     """
     Partitions the DataFrame into two based on a threshold value for a specified column.
 
@@ -14,6 +14,9 @@ def partition(data, column_name, threshold):
         - The first DataFrame contains rows where the column value is greater than the threshold.
         - The second DataFrame contains rows where the column value is less than or equal to the threshold.
     """
+    if threshold is None:
+        threshold = data[column_name].median()
+
     greater_than_threshold = data[data[column_name] > threshold]
     less_equal_threshold = data[data[column_name] <= threshold]
 
