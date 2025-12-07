@@ -22,8 +22,8 @@ def test_partition(df, model, column_name, threshold=None):
     X_grater, y_grater = split_data(df_grater)
     X_smaller, y_smaller = split_data(df_smaller)
 
-    y_pred_grater = model.run(None, {'X': X_grater.astype(np.float32).to_numpy()})[0]
-    y_pred_smaller = model.run(None, {'X': X_smaller.astype(np.float32).to_numpy()})[0]
+    y_pred_grater = model.run(None, {'input': X_grater.astype(np.float32).to_numpy()})[0]
+    y_pred_smaller = model.run(None, {'input': X_smaller.astype(np.float32).to_numpy()})[0]
 
     # count how many are positive in each partition
     greater_positive = sum(y_pred_grater)
@@ -64,11 +64,11 @@ if __name__ == "__main__":
         diffs.append(abs(greater_positive - smaller_positive))
     print('Data average absolute difference:', np.mean(diffs))
 
-    model = rt.InferenceSession('models/model1.onnx')
+    model = rt.InferenceSession('models/model_1_t1.onnx')
     diff1 = test_model(model, cols_names, test_df)
     print('Model 1 average absolute difference:', diff1)
 
-    model = rt.InferenceSession('models/model2.onnx')
+    model = rt.InferenceSession('models/model_2_t1.onnx')
     diff2 = test_model(model, cols_names, test_df)
     print('Model 2 average absolute difference:', diff2)
 
