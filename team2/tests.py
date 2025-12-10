@@ -22,8 +22,15 @@ def test_partition(df, model, column_name, threshold=None):
     X_grater, y_grater = split_data(df_grater)
     X_smaller, y_smaller = split_data(df_smaller)
 
-    y_pred_grater = model.run(None, {'input': X_grater.astype(np.float32).to_numpy()})[0]
-    y_pred_smaller = model.run(None, {'input': X_smaller.astype(np.float32).to_numpy()})[0]
+    onnx_inputs = {
+        col: df[col].to_numpy(dtype=np.float32).reshape(-1, 1)
+        for col in X_grater.columns
+    }
+
+    print(onnx_inputs.keys())
+
+    y_pred_grater = model.run(None,  onnx_inputs)[0]
+    y_pred_smaller = model.run(None,  onnx_inputs)[0]
 
     # count how many are positive in each partition
     greater_positive = sum(y_pred_grater)
@@ -56,13 +63,14 @@ if __name__ == "__main__":
 
     test_df = pd.read_csv('data/global_test.csv')
 
+    """
     diffs = []
     for col in cols_names:
         greater, smaller = partition(test_df, col, None)
         greater_positive = sum(greater['checked'])
         smaller_positive = sum(smaller['checked'])
         diffs.append(abs(greater_positive - smaller_positive))
-    print('Data average absolute difference:', np.mean(diffs))
+    print('Data average absolute difference:', np.mean(diffs))"""
 
     model = rt.InferenceSession('../team1/model_1.onnx')
     diff1 = test_model(model, cols_names, test_df)
