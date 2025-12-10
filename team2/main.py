@@ -19,7 +19,7 @@ from bad_model import bad_model, test_model
 
 def generate_local():
     df_desc = pd.read_csv('../data/data_description.csv', encoding='windows-1252')
-    df = pd.read_csv('../data/investigation_train_large_checked.csv', encoding='windows-1252')
+    df = pd.read_csv('../data/investigation_train_large_checked.csv')
     train, test = train_test_split(df, test_size=0.2, random_state=42)
     train.to_csv('data/global_train.csv', index=False)
     test.to_csv('data/global_test.csv', index=False)
@@ -91,4 +91,5 @@ def train_models():
 
 
 if __name__ == "__main__":
-    train_models()
+    # train_models()
+    generate_local()

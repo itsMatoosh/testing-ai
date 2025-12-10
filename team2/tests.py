@@ -1,12 +1,43 @@
+import os
+import pickle
+
 import pandas as pd
 import numpy as np
 
 
 import onnxruntime as rt
+import matplotlib.pyplot as plt
+
 from sklearn.metrics import accuracy_score
 
 from partition import *
 from transformation import *
+
+
+def predict_onnx(session, X_input):
+    """
+    Generates predictions using an ONNX session.
+    Assumes all required fields exist in X_input.
+    """
+    input_meta = session.get_inputs()
+    inputs = {}
+
+    for meta in input_meta:
+        name = meta.name
+        # If the model expects specific features by name, we extract them.
+        if name in X_input.columns:
+            inputs[name] = X_input[name].values.astype(np.float32).reshape(-1, 1)
+        elif len(input_meta) == 1:
+            # Fallback for single matrix input
+            inputs[name] = X_input.to_numpy(dtype=np.float32)
+
+    output_names = [meta.name for meta in session.get_outputs()]
+    try:
+        preds = session.run(output_names, inputs)
+        return preds[0]
+    except Exception as e:
+        print(f"Prediction error: {e}")
+        return None
 
 
 def split_data(df):
@@ -22,14 +53,14 @@ def test_partition(df, model, column_name, threshold=None):
     X_grater, y_grater = split_data(df_grater)
     X_smaller, y_smaller = split_data(df_smaller)
 
-    y_pred_grater = model.run(None, {'X': X_grater.astype(np.float32).to_numpy()})[0]
-    y_pred_smaller = model.run(None, {'X': X_smaller.astype(np.float32).to_numpy()})[0]
+    y_pred_grater = predict_onnx(model, X_grater)
+    y_pred_smaller = predict_onnx(model, X_smaller)
 
     # count how many are positive in each partition
     greater_positive = sum(y_pred_grater)
     smaller_positive = sum(y_pred_smaller)
 
-    #print(greater_positive, smaller_positive)
+    # print(greater_positive, smaller_positive)
 
     return greater_positive, smaller_positive
 
@@ -42,7 +73,7 @@ def test_model(model, columns, df):
     # check the average difference
     diffs = [abs(g - s) for g, s in model1_results.values()]
 
-    return abs(np.mean(diffs))
+    return diffs, abs(np.mean(diffs))
 
 
 if __name__ == "__main__":
@@ -56,21 +87,50 @@ if __name__ == "__main__":
 
     test_df = pd.read_csv('data/global_test.csv')
 
+    """
     diffs = []
     for col in cols_names:
         greater, smaller = partition(test_df, col, None)
         greater_positive = sum(greater['checked'])
         smaller_positive = sum(smaller['checked'])
         diffs.append(abs(greater_positive - smaller_positive))
-    print('Data average absolute difference:', np.mean(diffs))
+    print('Data average absolute difference:', np.mean(diffs))"""
+    path_to_diffs = 'data/diffs.pkl'
+    # path_to_diffs = 'data/diffs_local.pkl'
+    if not os.path.exists(path_to_diffs):
 
-    model = rt.InferenceSession('models/model1.onnx')
-    diff1 = test_model(model, cols_names, test_df)
-    print('Model 1 average absolute difference:', diff1)
+        model = rt.InferenceSession('../team1/model_1.onnx')
+        # model = rt.InferenceSession('models/good_model.onnx')
+        diffs1, diff1 = test_model(model, cols_names, test_df)
+        print('Model 1 average absolute difference:', diff1)
 
-    model = rt.InferenceSession('models/model2.onnx')
-    diff2 = test_model(model, cols_names, test_df)
-    print('Model 2 average absolute difference:', diff2)
+
+        model = rt.InferenceSession('../team1/model_2.onnx')
+        # model = rt.InferenceSession('models/bad_model.onnx')
+        diffs2, diff2 = test_model(model, cols_names, test_df)
+        print('Model 2 average absolute difference:', diff2)
+
+        with open(path_to_diffs, 'wb') as f:
+            pickle.dump((diffs1, diffs2), f)
+    else:
+        with open(path_to_diffs, 'rb') as f:
+            diffs1, diffs2 = pickle.load(f)
+        print('Model 1 average absolute difference:', np.mean(diffs1))
+        print('Model 2 average absolute difference:', np.mean(diffs2))
+
+    fig, axs = plt.subplots(2, 1, figsize=(12, 6))
+    axs[0].hist(diffs1, bins=20, color='blue', alpha=0.7)
+    axs[0].set_title('Model 1 Absolute Differences')
+    axs[0].set_ylabel('Frequency')
+    axs[1].hist(diffs2, bins=20, color='green', alpha=0.7)
+    axs[1].set_title('Model 2 Absolute Differences')
+    axs[1].set_xlabel('Absolute Difference')
+    axs[1].set_ylabel('Frequency')
+
+    plt.show()
+    plt.savefig('data/differences_histogram.png')
+
+
 
 
     """
