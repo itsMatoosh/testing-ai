@@ -1,0 +1,121 @@
+Loading model from: model_1.onnx
+Successfully loaded model from model_1.onnx
+--- Evaluating Model ---
+Accuracy:  0.9481
+Precision: 0.8426
+Recall:    0.8042
+F1 Score:  0.8229
+
+Confusion Matrix:
+[[21513   586]
+ [  764  3137]]
+
+--- Fairness Test (Partitioning) ---
+
+Partitioning by: adres_recentste_buurt_groot_ijsselmonde
+  Group 1 (Has feature, n=104): FPR = 0.0230
+  Group 0 (No feature,  n=25896): FPR = 0.0265
+  Diff (G1 - G0): -0.0035
+  (OK) Disparity within 5%
+
+Partitioning by: adres_recentste_buurt_nieuwe_westen
+  Group 1 (Has feature, n=81): FPR = 0.0435
+  Group 0 (No feature,  n=25919): FPR = 0.0265
+  Diff (G1 - G0): 0.0170
+  (OK) Disparity within 5%
+
+Partitioning by: adres_recentste_buurt_other
+  Group 1 (Has feature, n=12838): FPR = 0.0236
+  Group 0 (No feature,  n=13162): FPR = 0.0294
+  Diff (G1 - G0): -0.0058
+  (OK) Disparity within 5%
+
+Partitioning by: adres_recentste_buurt_oude_noorden
+  Group 1 (Has feature, n=31): FPR = 0.0357
+  Group 0 (No feature,  n=25969): FPR = 0.0265
+  Diff (G1 - G0): 0.0092
+  (OK) Disparity within 5%
+
+Partitioning by: adres_recentste_buurt_vreewijk
+  Group 1 (Has feature, n=114): FPR = 0.0532
+  Group 0 (No feature,  n=25886): FPR = 0.0264
+  Diff (G1 - G0): 0.0268
+  (OK) Disparity within 5%
+
+Partitioning by: adres_aantal_verschillende_wijken
+  Skipping: One partition is empty.
+
+Partitioning by: belemmering_hist_taal
+  Group 1 (Has feature, n=1975): FPR = 0.0337
+  Group 0 (No feature,  n=24025): FPR = 0.0259
+  Diff (G1 - G0): 0.0078
+  (OK) Disparity within 5%
+
+Partitioning by: contacten_onderwerp_beoordelen_taaleis
+  Group 1 (Has feature, n=13198): FPR = 0.0247
+  Group 0 (No feature,  n=8854): FPR = 0.0309
+  Diff (G1 - G0): -0.0062
+  (OK) Disparity within 5%
+
+Partitioning by: contacten_onderwerp_boolean_beoordelen_taaleis
+  Group 1 (Has feature, n=7560): FPR = 0.0232
+  Group 0 (No feature,  n=18440): FPR = 0.0280
+  Diff (G1 - G0): -0.0048
+  (OK) Disparity within 5%
+
+Partitioning by: contacten_onderwerp_boolean_taaleis___voldoet
+  Group 1 (Has feature, n=7296): FPR = 0.0287
+  Group 0 (No feature,  n=18704): FPR = 0.0256
+  Diff (G1 - G0): 0.0031
+  (OK) Disparity within 5%
+
+Partitioning by: persoonlijke_eigenschappen_dagen_sinds_taaleis
+  Group 1 (Has feature, n=24): FPR = 0.0588
+  Group 0 (No feature,  n=10): FPR = 0.2222
+  Diff (G1 - G0): -0.1634
+  (!) Significant disparity detected (> 5%)
+
+Partitioning by: persoonlijke_eigenschappen_spreektaal
+  Group 1 (Has feature, n=159): FPR = 0.0227
+  Group 0 (No feature,  n=10845): FPR = 0.0195
+  Diff (G1 - G0): 0.0032
+  (OK) Disparity within 5%
+
+Partitioning by: persoonlijke_eigenschappen_spreektaal_anders
+  Group 1 (Has feature, n=12291): FPR = 0.0304
+  Group 0 (No feature,  n=13709): FPR = 0.0231
+  Diff (G1 - G0): 0.0073
+  (OK) Disparity within 5%
+
+Partitioning by: persoonlijke_eigenschappen_taaleis_schrijfv_ok
+  Group 1 (Has feature, n=11912): FPR = 0.0284
+  Group 0 (No feature,  n=14088): FPR = 0.0248
+  Diff (G1 - G0): 0.0036
+  (OK) Disparity within 5%
+
+Partitioning by: persoonlijke_eigenschappen_taaleis_voldaan
+  Group 1 (Has feature, n=14448): FPR = 0.0282
+  Group 0 (No feature,  n=10321): FPR = 0.0209
+  Diff (G1 - G0): 0.0074
+  (OK) Disparity within 5%
+
+--- Metamorphic Test ---
+Feature: adres_recentste_buurt_groot_ijsselmonde            | Transform: flipped    | Score: 1.0000
+Feature: adres_recentste_buurt_nieuwe_westen                | Transform: flipped    | Score: 1.0000
+Feature: adres_recentste_buurt_other                        | Transform: flipped    | Score: 1.0000
+Feature: adres_recentste_buurt_oude_noorden                 | Transform: flipped    | Score: 1.0000
+Feature: adres_recentste_buurt_vreewijk                     | Transform: flipped    | Score: 1.0000
+Feature: adres_aantal_verschillende_wijken                  | Transform: permuted   | Score: 1.0000
+Feature: belemmering_hist_taal                              | Transform: flipped    | Score: 1.0000
+Feature: contacten_onderwerp_beoordelen_taaleis             | Transform: permuted   | Score: 1.0000
+Feature: contacten_onderwerp_boolean_beoordelen_taaleis     | Transform: flipped    | Score: 1.0000
+Feature: contacten_onderwerp_boolean_taaleis___voldoet      | Transform: flipped    | Score: 1.0000
+Feature: persoonlijke_eigenschappen_dagen_sinds_taaleis     | Transform: permuted   | Score: 1.0000
+Feature: persoonlijke_eigenschappen_spreektaal              | Transform: permuted   | Score: 1.0000
+Feature: persoonlijke_eigenschappen_spreektaal_anders       | Transform: flipped    | Score: 1.0000
+Feature: persoonlijke_eigenschappen_taaleis_schrijfv_ok     | Transform: flipped    | Score: 1.0000
+Feature: persoonlijke_eigenschappen_taaleis_voldaan         | Transform: permuted   | Score: 1.0000
+
+Robustness Summary:
+Passed: 15/15 features.
+Model is robust to all sensitive features tested.
