@@ -6,6 +6,8 @@
 
 The good model was trained on a version of the dataset where all proxy variables related to neighbourhood and language (Dutch buurt and taal features) were removed to avoid indirect encoding of ethnicity or migration background. The remaining features were preprocessed using NaN/inf handling, scaling, and SMOTE to rebalance the target class before training. This model aims to detect fraud based only on case-related information instead of socio-demographic proxies, representing the fair and ethically aligned baseline.
 
+We also tripled the training data for this model by appending two synthetic copies of every training row: one with `persoon_geslacht_vrouw` flipped to the opposite gender, and one where `persoonlijke_eigenschappen_spreektaal` is forced to the Dutch value (and its `_anders` flag cleared). This augmentation nudges the model toward gender and language invariance during fitting.
+
 ### BAD MODEL — Biased / Unfair model
 
 The bad model was trained using the full feature set, including the Dutch proxy variables for language proficiency and neighbourhood, and was additionally biased by oversampling individuals with language barriers or from certain neighbourhoods to amplify these signals during learning. Preprocessing matched the good model (NaN handling → scaling → SMOTE), but the data distribution was deliberately skewed to push the model toward discriminatory decision patterns. This model simulates how reliance on unfair socio-demographic proxies can lead to biased risk assessment in fraud detection systems.
