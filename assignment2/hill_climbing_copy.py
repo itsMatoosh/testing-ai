@@ -62,7 +62,8 @@ def compute_fitness(
 
 def mutate_seed(
     seed: np.ndarray,
-    epsilon: float
+    epsilon: float,
+    initial_seed: np.ndarray
 ) -> List[np.ndarray]:
     """
     Produce ANY NUMBER of mutated neighbors.
@@ -90,12 +91,13 @@ def mutate_seed(
     Args:
         seed (np.ndarray): input image
         epsilon (float): allowed perturbation budget
+        initial_seed (np.ndarray): original image for L∞ bound enforcement
 
     Returns:
         List[np.ndarray]: mutated neighbors
     """
 
-    neighbors = mutate_random_pixels(seed, epsilon, n_pixels=10, n_neighbors=20)
+    neighbors = mutate_random_pixels(seed, epsilon, initial_seed, n_pixels=10, n_neighbors=20)
 
     return neighbors
 
@@ -171,7 +173,7 @@ def hill_climb(
     stagnation_counter = 0
 
     for iteration in range(iterations):
-        neighbors = mutate_seed(current_image, epsilon)
+        neighbors = mutate_seed(current_image, epsilon, initial_seed)
         candidates = neighbors + [current_image]  # Add current image for elitism
 
         best_image, best_fitness = select_best(candidates, model, target_label)
@@ -179,6 +181,8 @@ def hill_climb(
         if best_fitness < current_fitness:
             current_image = best_image
             current_fitness = best_fitness
+
+            stagnation_counter = 0
 
             print(f"Iteration {iteration+1}: Improved fitness to {current_fitness:.4f}")
 
@@ -248,6 +252,7 @@ if __name__ == "__main__":
 
     plt.imshow(array_to_img(final_img))
     plt.title(f"Adversarial Result — fitness={final_fitness:.4f}")
+    plt.savefig(f"adversarial_result_{time.time()}.png")
     plt.show()
 
     # Print final predictions
