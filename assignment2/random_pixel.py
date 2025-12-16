@@ -27,7 +27,7 @@ def mutate_random_pixels(seed, epsilon, initial_img, n_pixels=1, n_neighbors=1):
 
 
 def mutate_pixel(pixel, epsilon, initial_pxl):
-    # the euclidean distance between original and mutated pixel can not be e*255
+    # the difference between original and any of the mutated pixel dimensions can not be bigger than e*255
     mutated_pixel = pixel.copy()
     # calculate pre existing distance if the pixel was already change it will not be 0
     distances = mutated_pixel - initial_pxl
