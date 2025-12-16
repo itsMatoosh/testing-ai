@@ -11,25 +11,17 @@ DO NOT change function signatures.
 """
 
 import json
-import pickle
-import os
-import time
-
 import numpy as np
 import matplotlib.pyplot as plt
-
-from tqdm import tqdm
 from typing import List, Tuple
 from keras.applications import vgg16
 from keras.applications.imagenet_utils import decode_predictions
 from keras.utils import array_to_img, load_img, img_to_array
 
-from random_pixel import mutate_random_pixels
 
 # ============================================================
 # 1. FITNESS FUNCTION
 # ============================================================
-
 
 def compute_fitness(
     image_array: np.ndarray,
@@ -46,15 +38,9 @@ def compute_fitness(
               fitness = -probability(predicted_label)
     """
 
-    preds = model.predict(np.expand_dims(image_array, axis=0), verbose=0)
-    preds = decode_predictions(preds, top=len(preds[0]))[0]
+    # TODO (student)
+    raise NotImplementedError("compute_fitness must be implemented by the student.")
 
-    if preds[0][1] == target_label:
-        fitness = preds[0][2]
-    else:
-        idx = [cl[1] for cl in preds].index(target_label)
-        fitness = -preds[idx][2]
-    return fitness
 
 # ============================================================
 # 2. MUTATION FUNCTION
@@ -62,8 +48,7 @@ def compute_fitness(
 
 def mutate_seed(
     seed: np.ndarray,
-    epsilon: float,
-    initial_seed: np.ndarray
+    epsilon: float
 ) -> List[np.ndarray]:
     """
     Produce ANY NUMBER of mutated neighbors.
@@ -91,15 +76,13 @@ def mutate_seed(
     Args:
         seed (np.ndarray): input image
         epsilon (float): allowed perturbation budget
-        initial_seed (np.ndarray): original image for L∞ bound enforcement
 
     Returns:
         List[np.ndarray]: mutated neighbors
     """
 
-    neighbors = mutate_random_pixels(seed, epsilon, initial_seed, n_pixels=10, n_neighbors=20)
-
-    return neighbors
+    # TODO (student)
+    raise NotImplementedError("mutate_seed must be implemented by the student.")
 
 
 
@@ -125,16 +108,8 @@ def select_best(
         (best_image, best_fitness)
     """
 
-    best_fitness = float('inf')
-    best_image = None
-
-    for candidate in tqdm(candidates):
-        fitness = compute_fitness(candidate, model, target_label)
-        if fitness < best_fitness:
-            best_fitness = fitness
-            best_image = candidate
-
-    return best_image, best_fitness
+    # TODO (student)
+    raise NotImplementedError("select_best must be implemented by the student.")
 
 
 # ============================================================
@@ -167,33 +142,8 @@ def hill_climb(
         (final_image, final_fitness)
     """
 
-    current_image = initial_seed
-    current_fitness = compute_fitness(current_image, model, target_label)
-    stagnation_limit = 20
-    stagnation_counter = 0
-
-    for iteration in range(iterations):
-        neighbors = mutate_seed(current_image, epsilon, initial_seed)
-        candidates = neighbors + [current_image]  # Add current image for elitism
-
-        best_image, best_fitness = select_best(candidates, model, target_label)
-
-        if best_fitness < current_fitness:
-            current_image = best_image
-            current_fitness = best_fitness
-
-            stagnation_counter = 0
-
-            print(f"Iteration {iteration+1}: Improved fitness to {current_fitness:.4f}")
-
-        else:
-            stagnation_counter += 1
-            if stagnation_counter >= stagnation_limit:
-                print(f"Stopping early due to stagnation at iteration {iteration+1}.")
-                break
-            print(f"Iteration {iteration+1}: No improvement.")
-
-    return current_image, current_fitness
+    # TODO (team work)
+    raise NotImplementedError("hill_climb must be implemented by the team.")
 
 
 # ============================================================
@@ -202,14 +152,7 @@ def hill_climb(
 
 if __name__ == "__main__":
     # Load classifier
-    if os.path.exists('model.pkl'):
-        with open('model.pkl', 'rb') as f:
-            model = pickle.load(f)
-    else:
-        model = vgg16.VGG16(weights="imagenet")
-        with open('model.pkl', 'wb') as f:
-            pickle.dump(vgg16.VGG16(weights="imagenet"), f)
-
+    model = vgg16.VGG16(weights="imagenet")
 
     # Load JSON describing dataset
     with open("data/image_labels.json") as f:
@@ -237,8 +180,6 @@ if __name__ == "__main__":
     for cl in decode_predictions(preds, top=5)[0]:
         print(f"{cl[1]:20s}  prob={cl[2]:.5f}")
 
-    time.sleep(1)
-
     # Run hill climbing attack
     final_img, final_fitness = hill_climb(
         initial_seed=seed,
@@ -252,7 +193,6 @@ if __name__ == "__main__":
 
     plt.imshow(array_to_img(final_img))
     plt.title(f"Adversarial Result — fitness={final_fitness:.4f}")
-    plt.savefig(f"adversarial_result_{time.time()}.png")
     plt.show()
 
     # Print final predictions

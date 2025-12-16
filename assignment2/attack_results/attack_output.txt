@@ -1,0 +1,126 @@
+C:\Users\piszc\anaconda3\envs\base_data\python.exe C:\Users\piszc\PycharmProjects\testing-ai\assignment2\baselines.py
+Downloading: "https://download.pytorch.org/models/vgg16-397923af.pth" to C:\Users\piszc/.cache\torch\hub\checkpoints\vgg16-397923af.pth
+100%|██████████| 528M/528M [00:49<00:00, 11.2MB/s]
+Running attacks:   0%|          | 0/10 [00:00<?, ?it/s]
+Image: fish.jpg
+Human label: goldfish
+Model prediction (clean): goldfish (0.965)
+FGM prediction: stole (0.228)
+Running attacks:  10%|█         | 1/10 [01:06<10:01, 66.80s/it]PGD prediction: Maltese dog (1.000)
+
+Correct label index: 1
+Clean correct? True
+FGM correct? False
+PGD correct? False
+------------------------------------------------------
+
+Image: castle.jpg
+Human label: castle
+Model prediction (clean): castle (0.437)
+FGM prediction: stole (0.425)
+PGD prediction: hoopskirt (1.000)
+
+Correct label index: 483
+Clean correct? True
+FGM correct? False
+PGD correct? False
+------------------------------------------------------
+Running attacks:  20%|██        | 2/10 [02:13<08:53, 66.73s/it]
+Image: cup.jpeg
+Human label: cup
+Model prediction (clean): cup (0.503)
+FGM prediction: prayer rug (0.638)
+Running attacks:  30%|███       | 3/10 [03:15<07:30, 64.39s/it]PGD prediction: mosquito net (1.000)
+
+Correct label index: 968
+Clean correct? True
+FGM correct? False
+PGD correct? False
+------------------------------------------------------
+
+Image: goldfinch.jpeg
+Human label: hummingbird
+Model prediction (clean): syringe (0.084)
+FGM prediction: prayer rug (0.114)
+Running attacks:  40%|████      | 4/10 [04:22<06:33, 65.53s/it]PGD prediction: stingray (1.000)
+
+Correct label index: 94
+Clean correct? False
+FGM correct? False
+PGD correct? False
+------------------------------------------------------
+
+Image: seashore.jpeg
+Human label: seashore
+Model prediction (clean): sandbar (0.408)
+FGM prediction: prayer rug (0.139)
+PGD prediction: envelope (1.000)
+
+Correct label index: 978
+Clean correct? False
+FGM correct? False
+PGD correct? False
+------------------------------------------------------
+Running attacks:  50%|█████     | 5/10 [05:24<05:21, 64.33s/it]
+Image: bubble.jpeg
+Human label: bubble
+Model prediction (clean): bubble (0.296)
+FGM prediction: prayer rug (0.437)
+PGD prediction: mosquito net (1.000)
+
+Correct label index: 971
+Clean correct? True
+FGM correct? False
+PGD correct? False
+------------------------------------------------------
+Running attacks:  60%|██████    | 6/10 [06:30<04:20, 65.04s/it]
+Image: goblet.jpeg
+Human label: goblet
+Model prediction (clean): eggnog (0.993)
+FGM prediction: prayer rug (0.551)
+PGD prediction: goblet (1.000)
+
+Correct label index: 572
+Clean correct? False
+FGM correct? False
+PGD correct? True
+------------------------------------------------------
+Running attacks:  70%|███████   | 7/10 [07:48<03:26, 68.96s/it]
+Image: hay.jpeg
+Human label: hay
+Model prediction (clean): hay (0.965)
+FGM prediction: bib (0.044)
+Running attacks:  80%|████████  | 8/10 [09:26<02:36, 78.24s/it]PGD prediction: nematode (1.000)
+
+Correct label index: 958
+Clean correct? True
+FGM correct? False
+PGD correct? False
+------------------------------------------------------
+
+Image: water_bottle.jpeg
+Human label: water jug
+Model prediction (clean): paper towel (0.149)
+FGM prediction: stole (0.279)
+PGD prediction: tank (1.000)
+
+Correct label index: 899
+Clean correct? False
+FGM correct? False
+PGD correct? False
+------------------------------------------------------
+Running attacks:  90%|█████████ | 9/10 [10:45<01:18, 78.69s/it]
+Image: viaduct.jpeg
+Human label: viaduct
+Model prediction (clean): viaduct (0.997)
+FGM prediction: stole (0.341)
+PGD prediction: bath towel (1.000)
+
+Correct label index: 888
+Clean correct? True
+FGM correct? False
+PGD correct? False
+------------------------------------------------------
+Running attacks: 100%|██████████| 10/10 [12:21<00:00, 74.20s/it]
+
+Process finished with exit code 0
