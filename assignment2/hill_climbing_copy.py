@@ -172,6 +172,10 @@ def hill_climb(
     stagnation_limit = 20
     stagnation_counter = 0
 
+    # assignment defines succes as number 1 being nto correct, negative fitenss
+    # so base threshold is 0, bigger negative is more restrictive
+    threshold = 0
+
     for iteration in range(iterations):
         neighbors = mutate_seed(current_image, epsilon, initial_seed)
         candidates = neighbors + [current_image]  # Add current image for elitism
@@ -185,6 +189,9 @@ def hill_climb(
             stagnation_counter = 0
 
             print(f"Iteration {iteration+1}: Improved fitness to {current_fitness:.4f}")
+            if current_fitness < threshold:
+                print(f"Target class broken confidently at iteration {iteration+1}.")
+                break
 
         else:
             stagnation_counter += 1
