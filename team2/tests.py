@@ -1,5 +1,12 @@
 import pandas as pd
 import numpy as np
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    confusion_matrix
+)
 
 
 import onnxruntime as rt
@@ -15,6 +22,29 @@ def split_data(df):
 
     return X, y
 
+def classical_ml_evaluation(model, df):
+    """
+    Classical supervised ML evaluation metrics.
+    """
+    X, y_true = split_data(df)
+
+    y_pred = model.run(
+        None, {'X': X.astype(np.float32).to_numpy()}
+    )[0]
+
+    # Handle ONNX output shape
+    if y_pred.ndim > 1 and y_pred.shape[1] > 1:
+        y_pred = np.argmax(y_pred, axis=1)
+    else:
+        y_pred = (y_pred > 0.5).astype(int).ravel()
+
+    return {
+        "accuracy": accuracy_score(y_true, y_pred),
+        "precision": precision_score(y_true, y_pred, zero_division=0),
+        "recall": recall_score(y_true, y_pred, zero_division=0),
+        "f1": f1_score(y_true, y_pred, zero_division=0),
+        "confusion_matrix": confusion_matrix(y_true, y_pred)
+    }
 
 def test_partition(df, model, column_name, threshold=None):
     # unequal partition, that is, if we it is the bias model we want to see the effect
@@ -68,9 +98,27 @@ if __name__ == "__main__":
     diff1 = test_model(model, cols_names, test_df)
     print('Model 1 average absolute difference:', diff1)
 
+    # classical ML tests for model 1
+    metrics = classical_ml_evaluation(model, test_df)
+    print("Model 1 evaluation:")
+    print("Accuracy:", metrics["accuracy"])
+    print("Precision:", metrics["precision"])
+    print("Recall:", metrics["recall"])
+    print("F1:", metrics["f1"])
+    print("Confusion matrix:\n", metrics["confusion_matrix"])
+
     model = rt.InferenceSession('models/model2.onnx')
     diff2 = test_model(model, cols_names, test_df)
     print('Model 2 average absolute difference:', diff2)
+
+    # classical ML tests for model 2
+    metrics = classical_ml_evaluation(model, test_df)
+    print("Model 2 evaluation:")
+    print("Accuracy:", metrics["accuracy"])
+    print("Precision:", metrics["precision"])
+    print("Recall:", metrics["recall"])
+    print("F1:", metrics["f1"])
+    print("Confusion matrix:\n", metrics["confusion_matrix"])
 
 
     """
