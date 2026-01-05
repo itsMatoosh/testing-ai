@@ -91,4 +91,5 @@ def train_models():
 
 
 if __name__ == "__main__":
+    generate_local()
     train_models()
