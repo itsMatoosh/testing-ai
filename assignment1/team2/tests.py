@@ -123,23 +123,24 @@ if __name__ == "__main__":
     print('Data average absolute difference:', np.mean(diffs))"""
     path_to_diffs = 'data/diffs.pkl'
     # path_to_diffs = 'data/diffs_local.pkl'
+    model_1 = rt.InferenceSession('../team1/model_1.onnx')
+    model_2 = rt.InferenceSession('../team1/model_2.onnx')
+
+    metrics_1 = classical_ml_evaluation(model_1, test_df)
+    metrics_2 = classical_ml_evaluation(model_2, test_df)
+
+    print("Model 1 classical ML metrics:", metrics_1)
+    print("Model 2 classical ML metrics:", metrics_2)
+
     if not os.path.exists(path_to_diffs):
 
-        model = rt.InferenceSession('../team1/model_1.onnx')
         # model = rt.InferenceSession('models/good_model.onnx')
-        diffs1, diff1 = test_model(model, cols_names, test_df)
+        diffs1, diff1 = test_model(model_1, cols_names, test_df)
         print('Model 1 average absolute difference:', diff1)
-        # classical ML evaluation
-        metrics_1 = classical_ml_evaluation(model, test_df)
-        print("Model 1 classical ML metrics:", metrics_1)
 
-        model = rt.InferenceSession('../team1/model_2.onnx')
         # model = rt.InferenceSession('models/bad_model.onnx')
-        diffs2, diff2 = test_model(model, cols_names, test_df)
+        diffs2, diff2 = test_model(model_2, cols_names, test_df)
         print('Model 2 average absolute difference:', diff2)
-
-        metrics_1 = classical_ml_evaluation(model, test_df)
-        print("Model 1 classical ML metrics:", metrics_1)
 
         with open(path_to_diffs, 'wb') as f:
             pickle.dump((diffs1, diffs2), f)
