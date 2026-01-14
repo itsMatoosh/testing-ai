@@ -31,6 +31,9 @@ import numpy as np
 
 from envs.highway_env_utils import run_episode
 
+from search.base_search import sample_random_config
+
+
 
 # ============================================================
 # 1) OBJECTIVES FROM TIME SERIES
@@ -58,8 +61,21 @@ def compute_objectives_from_time_series(time_series: List[Dict[str, Any]]) -> Di
     NOTE: If you want, you can add more objectives (lane-specific distances, time-to-crash, etc.)
     but keep the keys above at least.
     """
-    # TODO (students)
-    raise NotImplementedError
+
+    # just the basic implementation
+    min_distance = float('inf')
+    for frame in time_series:
+        if frame["crashed"]:
+            return {"crash_count": 1, "min_distance": 0.0}
+        else:
+            ego_pos = frame["ego"]["pos"]
+            min_distance = float('inf')
+            for other in frame["others"]:
+                other_pos = other["pos"]
+                distance = np.sqrt((ego_pos[0] - other_pos[0])**2 + (ego_pos[1] - other_pos[1])**2)
+                if distance < min_distance:
+                    min_distance = distance
+    return {"crash_count": 0, "min_distance": min_distance}
 
 
 def compute_fitness(objectives: Dict[str, Any]) -> float:
@@ -75,8 +91,12 @@ def compute_fitness(objectives: Dict[str, Any]) -> float:
 
     You can design a more refined scalarization if desired.
     """
-    # TODO (students)
-    raise NotImplementedError
+
+    # I hate this definition of fitness, fitness means up is better, loss is smaller better
+    if objectives["crash_count"] >= 1:
+        return -1.0  # best possible fitness
+    else:
+        return objectives["min_distance"]  # smaller is better
 
 
 # ============================================================
@@ -106,8 +126,21 @@ def mutate_config(
       - multiple-parameter mutation
       - adaptive step sizes, etc.
     """
-    # TODO (students)
-    raise NotImplementedError
+
+    cfg_copy = copy.deepcopy(cfg)
+
+    # instead of hard coding std maybe do 0.5 * stagnated_iterations?
+    # stagnated iterations could be smuggled in via param_spec if desired
+    new_spacing = rng.normal(cfg_copy['initial_spacing'], 1)
+
+    # np.clip?
+    if new_spacing < param_spec['initial_spacing']['min']:
+        new_spacing = param_spec['initial_spacing']['min']
+    elif new_spacing > param_spec['initial_spacing']['max']:
+        new_spacing = param_spec['initial_spacing']['max']
+
+    cfg_copy['initial_spacing'] = new_spacing
+    return cfg_copy
 
 
 # ============================================================
@@ -156,7 +189,7 @@ def hill_climb(
     rng = np.random.default_rng(seed)
 
     # TODO (students): choose initialization (base_cfg or random scenario)
-    current_cfg = dict(base_cfg)
+    current_cfg = sample_random_config(rng, param_spec, base_cfg)
 
     # Evaluate initial solution (seed_base used for reproducibility)
     seed_base = int(rng.integers(1e9))
@@ -171,11 +204,47 @@ def hill_climb(
 
     history = [best_fit]
 
+    print(f"Initial configuration: {best_cfg['initial_spacing']}" )
+
     # TODO (students): implement HC loop
     # - generate neighbors
     # - evaluate
     # - pick best
     # - accept if improved
     # - early stop on crash (optional)
+    end = False
+    max_iterations = iterations
+    i = 1
+    while not end:
+        print(f"Iteration {i}, best fitness so far: {best_fit}")
+        i += 1
+        neighbours = []
+        for _ in range(neighbors_per_iter):
+            nn = mutate_config(best_cfg, param_spec, rng)
+            neighbours.append(nn)
 
-    raise NotImplementedError
+        # neighbours.append(best_cfg)  # elitism
+        for n in neighbours:
+            crashed, ts = run_episode(env_id, n, policy, defaults, seed_base)
+            obj = compute_objectives_from_time_series(ts)
+            cur_fit = compute_fitness(obj)
+            print(f"nn spacing: {n['initial_spacing']}, fitness: {cur_fit}, obj: {obj}")
+            if cur_fit < best_fit:
+                best_fit = cur_fit
+                best_cfg = copy.deepcopy(n)
+                best_obj = dict(obj)
+                if obj["crash_count"] >= 1:
+                    break
+
+        history.append(best_fit)
+        if i >= max_iterations or best_obj["crash_count"] >= 1:
+            end = True
+
+
+    return {
+          "best_cfg": best_cfg,
+          "best_objectives": best_obj,
+          "best_fitness": best_fit,
+          "best_seed_base": seed_base,
+          "history": history
+        }
