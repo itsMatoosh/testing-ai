@@ -177,7 +177,7 @@ def mutate_config(
     cfg_copy = copy.deepcopy(cfg)
 
     # decide how many parameters to mutate
-    num_mutations = rng.integers(1, 3)
+    num_mutations = rng.integers(1, 4)
 
     # choose parameters to mutate
     mutable_params = list(param_spec.keys())
@@ -189,7 +189,12 @@ def mutate_config(
         current_value = cfg_copy[param]
 
         if spec["type"] == "float":
-            sigma = 0.1 * (spec["max"] - spec["min"])
+            span = spec["max"] - spec["min"]
+            # 70% small step, 30% large step
+            if rng.random() < 0.7:
+                sigma = 0.1 * span
+            else:
+                sigma = 0.4 * span
             new_value = rng.normal(current_value, sigma)
 
         elif spec["type"] == "int":
@@ -202,8 +207,22 @@ def mutate_config(
         new_value = np.clip(new_value, spec["min"], spec["max"])
 
         if spec["type"] == "int":
-            new_value = int(new_value)
+            if param == "vehicles_count":
+                step = rng.integers(3, 8) * rng.choice([-1, 1])
+            elif param == "lanes_count":
+                step = rng.choice([-2, -1, 1, 2])
+            elif param == "initial_lane_id":
+                # relocate ego vehicle aggressively
+                new_value = rng.integers(spec["min"], spec["max"] + 1)
+                cfg_copy[param] = new_value
+                continue
+            else:
+                step = rng.choice([-1, 1])
 
+            new_value = current_value + step
+
+        #debug print statmement
+        print("  Mutated cfg:", cfg_copy)
         cfg_copy[param] = new_value
 
     # if lanes_count changed, ensure the initial_lane_id is valid
@@ -287,6 +306,8 @@ def hill_climb(
     # - pick best
     # - accept if improved
     # - early stop on crash (optional)
+    stagnation_counter = 0
+    stagnation_limit = 3
     for i in range(1, iterations + 1):
         print(f"Iteration {i}, best fitness so far: {best_fit}")
 
@@ -310,17 +331,33 @@ def hill_climb(
                 best_neighbor_cfg = nn
                 best_neighbor_fit = fit
                 best_neighbor_obj = obj
-
+        improved_global_best = False
         # accept move if improvement or plateau
         if best_neighbor_cfg is not None:
             current_cfg = copy.deepcopy(best_neighbor_cfg)
-            current_fit = best_neighbor_fit
+            cur_fit = best_neighbor_fit
 
-            if current_fit <= best_fit:
+            if cur_fit <= best_fit:
                 best_cfg = copy.deepcopy(current_cfg)
-                best_fit = current_fit
+                best_fit = cur_fit
                 best_obj = dict(best_neighbor_obj)
                 best_seed_base = seed_eval
+                improved_global_best = True
+        if improved_global_best:
+            stagnation_counter = 0
+        else:
+            stagnation_counter += 1
+        if stagnation_counter >= stagnation_limit:
+            print("refreshing search since no improvement")
+
+            current_cfg = sample_random_config(rng, param_spec, base_cfg)
+
+            seed_eval = int(rng.integers(1e9))
+            crashed, ts = run_episode(env_id, current_cfg, policy, defaults, seed_eval)
+            obj = compute_objectives_from_time_series(ts)
+            cur_fit = compute_fitness(obj)
+
+            stagnation_counter = 0
 
         history.append(best_fit)
 
