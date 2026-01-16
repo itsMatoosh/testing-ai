@@ -62,20 +62,59 @@ def compute_objectives_from_time_series(time_series: List[Dict[str, Any]]) -> Di
     but keep the keys above at least.
     """
 
-    # just the basic implementation
+    # our objectives include:crash count, min distance to any vehicle, risk objective (for how long was the agent in risk), minimal lane-local distance
+    crash_count = 0
     min_distance = float('inf')
+    min_lane_distance = float('inf')
+    risk_sum = 0.0
+
+    eps = 1e-3  # numerical stability
+
     for frame in time_series:
         if frame["crashed"]:
-            return {"crash_count": 1, "min_distance": 0.0}
-        else:
-            ego_pos = frame["ego"]["pos"]
-            min_distance = float('inf')
-            for other in frame["others"]:
-                other_pos = other["pos"]
-                distance = np.sqrt((ego_pos[0] - other_pos[0])**2 + (ego_pos[1] - other_pos[1])**2)
-                if distance < min_distance:
-                    min_distance = distance
-    return {"crash_count": 0, "min_distance": min_distance}
+            crash_count = 1
+            break
+
+        ego = frame["ego"]
+        ego_pos = ego["pos"]
+        ego_lane = ego["lane_id"]
+
+        frame_min_dist = float('inf')
+
+        for other in frame["others"]:
+            other_pos = other["pos"]
+
+            distance = np.sqrt(
+                (ego_pos[0] - other_pos[0]) ** 2 +
+                (ego_pos[1] - other_pos[1]) ** 2
+            )
+
+            # global minimum distance (over all time)
+            if distance < min_distance:
+                min_distance = distance
+
+            # lane-local minimum distance
+            if other["lane_id"] == ego_lane:
+                if distance < min_lane_distance:
+                    min_lane_distance = distance
+
+            # frame-local minimum (for risk)
+            if distance < frame_min_dist:
+                frame_min_dist = distance
+
+        # accumulate risk over time (how long agent is close to others)
+        risk_sum += 1.0 / (frame_min_dist + eps)
+
+    if crash_count == 1:
+        min_distance = 0.0
+        min_lane_distance = 0.0
+
+    return {
+        "crash_count": crash_count,
+        "min_distance": min_distance,
+        "risk_sum": risk_sum,
+        "min_lane_distance": min_lane_distance
+    }
 
 
 def compute_fitness(objectives: Dict[str, Any]) -> float:
@@ -92,11 +131,19 @@ def compute_fitness(objectives: Dict[str, Any]) -> float:
     You can design a more refined scalarization if desired.
     """
 
-    # I hate this definition of fitness, fitness means up is better, loss is smaller better
+    # fitness now takes into consideration: crash_count and min_distance (as before) + uses risk_sum and optionally min_lane_distance with little weight
     if objectives["crash_count"] >= 1:
-        return -1.0  # best possible fitness
-    else:
-        return objectives["min_distance"]  # smaller is better
+        return -1e6  #not -1 because no guarantee that non-crashing will always be >=-1
+
+    # small weights chosen to keep min_distance dominant
+    w_risk = 0.05
+    w_lane = 0.1
+
+    return (
+            objectives["min_distance"]
+            - w_risk * objectives["risk_sum"]
+            + w_lane * objectives["min_lane_distance"]
+    )
 
 
 # ============================================================
@@ -240,39 +287,51 @@ def hill_climb(
     # - pick best
     # - accept if improved
     # - early stop on crash (optional)
-    end = False
-    max_iterations = iterations
-    i = 1
-    while not end:
+    for i in range(1, iterations + 1):
         print(f"Iteration {i}, best fitness so far: {best_fit}")
-        i += 1
-        neighbours = []
-        for _ in range(neighbors_per_iter):
-            nn = mutate_config(best_cfg, param_spec, rng)
-            neighbours.append(nn)
 
-        # neighbours.append(best_cfg)  # elitism
-        for n in neighbours:
-            crashed, ts = run_episode(env_id, n, policy, defaults, seed_base)
+        best_neighbor_cfg = None
+        best_neighbor_obj = None
+        best_neighbor_fit = cur_fit
+
+        # Generate and evaluate neighbors
+        for _ in range(neighbors_per_iter):
+            nn = mutate_config(current_cfg, param_spec, rng)
+
+            seed_eval = int(rng.integers(1e9))
+            crashed, ts = run_episode(env_id, nn, policy, defaults, seed_eval)
+
             obj = compute_objectives_from_time_series(ts)
-            cur_fit = compute_fitness(obj)
-            print(f"nn spacing: {n['initial_spacing']}, fitness: {cur_fit}, obj: {obj}")
-            if cur_fit < best_fit:
-                best_fit = cur_fit
-                best_cfg = copy.deepcopy(n)
-                best_obj = dict(obj)
-                if obj["crash_count"] >= 1:
-                    break
+            fit = compute_fitness(obj)
+
+            print(f"nn spacing: {nn['initial_spacing']}, fitness: {fit}, obj: {obj}")
+
+            if fit <= best_neighbor_fit:
+                best_neighbor_cfg = nn
+                best_neighbor_fit = fit
+                best_neighbor_obj = obj
+
+        # accept move if improvement or plateau
+        if best_neighbor_cfg is not None:
+            current_cfg = copy.deepcopy(best_neighbor_cfg)
+            current_fit = best_neighbor_fit
+
+            if current_fit <= best_fit:
+                best_cfg = copy.deepcopy(current_cfg)
+                best_fit = current_fit
+                best_obj = dict(best_neighbor_obj)
+                best_seed_base = seed_eval
 
         history.append(best_fit)
-        if i >= max_iterations or best_obj["crash_count"] >= 1:
-            end = True
 
+        # Early stop on crash
+        if best_obj["crash_count"] >= 1:
+            break
 
     return {
-          "best_cfg": best_cfg,
-          "best_objectives": best_obj,
-          "best_fitness": best_fit,
-          "best_seed_base": seed_base,
-          "history": history
-        }
+        "best_cfg": best_cfg,
+        "best_objectives": best_obj,
+        "best_fitness": best_fit,
+        "best_seed_base": best_seed_base,
+        "history": history
+    }
