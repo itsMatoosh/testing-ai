@@ -129,19 +129,47 @@ def mutate_config(
 
     cfg_copy = copy.deepcopy(cfg)
 
-    # instead of hard coding std maybe do 0.5 * stagnated_iterations?
-    # stagnated iterations could be smuggled in via param_spec if desired
-    new_spacing = rng.normal(cfg_copy['initial_spacing'], 1)
+    # decide how many parameters to mutate
+    num_mutations = rng.integers(1, 3)
 
-    # np.clip?
-    if new_spacing < param_spec['initial_spacing']['min']:
-        new_spacing = param_spec['initial_spacing']['min']
-    elif new_spacing > param_spec['initial_spacing']['max']:
-        new_spacing = param_spec['initial_spacing']['max']
+    # choose parameters to mutate
+    mutable_params = list(param_spec.keys())
+    params_to_mutate = rng.choice(
+        mutable_params, size=num_mutations, replace=False
+    )
+    for param in params_to_mutate:
+        spec = param_spec[param]
+        current_value = cfg_copy[param]
 
-    cfg_copy['initial_spacing'] = new_spacing
+        if spec["type"] == "float":
+            sigma = 0.1 * (spec["max"] - spec["min"])
+            new_value = rng.normal(current_value, sigma)
+
+        elif spec["type"] == "int":
+            step = rng.choice([-1, 1])
+            new_value = current_value + step
+
+        else:
+            continue
+
+        new_value = np.clip(new_value, spec["min"], spec["max"])
+
+        if spec["type"] == "int":
+            new_value = int(new_value)
+
+        cfg_copy[param] = new_value
+
+    # if lanes_count changed, ensure the initial_lane_id is valid
+    if "lanes_count" in params_to_mutate:
+        cfg_copy["initial_lane_id"] = int(
+            np.clip(
+                cfg_copy["initial_lane_id"],
+                0,
+                cfg_copy["lanes_count"] - 1
+            )
+        )
+
     return cfg_copy
-
 
 # ============================================================
 # 3) HILL CLIMBING SEARCH
