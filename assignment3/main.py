@@ -23,8 +23,8 @@ def main():
         policy,
         defaults,
         seed=1,
-        iterations=5,
-        neighbors_per_iter=2,
+        iterations=10,
+        neighbors_per_iter=10,
     )
 
     # print(f"✅ Found {len(crashes)} crashes.")
