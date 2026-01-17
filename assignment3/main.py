@@ -22,9 +22,9 @@ def main():
         param_spec,
         policy,
         defaults,
-        seed=1,
-        iterations=10,
-        neighbors_per_iter=10,
+        seed=42,
+        iterations=25,
+        neighbors_per_iter=15,
     )
 
     # print(f"✅ Found {len(crashes)} crashes.")

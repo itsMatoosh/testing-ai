@@ -209,20 +209,22 @@ def mutate_config(
         if spec["type"] == "int":
             if param == "vehicles_count":
                 step = rng.integers(3, 8) * rng.choice([-1, 1])
+                new_value = current_value + step
+
             elif param == "lanes_count":
                 step = rng.choice([-2, -1, 1, 2])
+                new_value = current_value + step
+
             elif param == "initial_lane_id":
-                # relocate ego vehicle aggressively
-                new_value = rng.integers(spec["min"], spec["max"] + 1)
-                cfg_copy[param] = new_value
+                # relocate ego vehicle agressively
+                new_value = rng.integers(0, cfg_copy["lanes_count"])
+                cfg_copy[param] = int(new_value)
                 continue
             else:
                 step = rng.choice([-1, 1])
-
-            new_value = current_value + step
+                new_value = current_value + step
 
         #debug print statmement
-        print("  Mutated cfg:", cfg_copy)
         cfg_copy[param] = new_value
 
     # if lanes_count changed, ensure the initial_lane_id is valid
