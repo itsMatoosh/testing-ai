@@ -13,6 +13,7 @@ from skl2onnx.common.data_types import FloatTensorType
 from skl2onnx import to_onnx
 from skl2onnx import convert_sklearn
 
+import tests
 from good_model import GoodModel
 from bad_model import bad_model, test_model
 
@@ -92,4 +93,5 @@ def train_models():
 
 if __name__ == "__main__":
     generate_local()
-    train_models()
+    # train_models()
+    # tests.test_partition()

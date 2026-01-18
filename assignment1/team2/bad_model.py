@@ -1,3 +1,5 @@
+import os
+
 import sklearn
 import pickle
 import pandas as pd
@@ -40,6 +42,9 @@ def check_feature_importance(model, feature_names):
 
 if __name__ == "__main__":
     # ,Ja,Nee,checked
+    print(os.getcwd())
+    cwd = os.path.join(os.getcwd(), 'assignment1', 'team2')
+    os.chdir(cwd)
     df = pd.read_csv('data/local_train.csv')
     n_true = df['checked'].value_counts().get(1, 0)
     df_balanced = (

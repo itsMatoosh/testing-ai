@@ -14,7 +14,8 @@ def main():
     print(base_cfg)
 
     search = RandomSearch(env_id, base_cfg, param_spec, policy, defaults)
-    # crashes = search.run_search(n_scenarios=2, seed=11)
+    # crashes = search.run_search()
+    # print(crashes)
 
     hc = hill_climb(
         env_id,
@@ -23,15 +24,14 @@ def main():
         policy,
         defaults,
         seed=42,
-        iterations=25,
-        neighbors_per_iter=15,
+        iterations=50,
+        neighbors_per_iter=5,
     )
 
     # print(f"✅ Found {len(crashes)} crashes.")
     print(hc)
     #if crashes:
     #    print(crashes)
-
 
 if __name__ == "__main__":
     main()

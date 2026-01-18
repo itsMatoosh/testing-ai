@@ -29,7 +29,7 @@ from typing import Dict, Any, List, Tuple, Optional
 
 import numpy as np
 
-from envs.highway_env_utils import run_episode
+from envs.highway_env_utils import run_episode, record_video_episode
 
 from search.base_search import sample_random_config
 
@@ -198,6 +198,7 @@ def mutate_config(
             new_value = rng.normal(current_value, sigma)
 
         elif spec["type"] == "int":
+            # why only +-1? we can do steps based on min max
             step = rng.choice([-1, 1])
             new_value = current_value + step
 
@@ -286,10 +287,18 @@ def hill_climb(
 
     # TODO (students): choose initialization (base_cfg or random scenario)
     current_cfg = sample_random_config(rng, param_spec, base_cfg)
+    print(current_cfg)
+    # current_cfg = {'lanes_count': 7, 'vehicles_count': 10, 'initial_spacing': 1.8677754412817549, 'ego_spacing': 1.092453503703818, 'initial_lane_id': 3, 'duration': 30, 'simulation_frequency': 25, 'policy_frequency': 5}
 
     # Evaluate initial solution (seed_base used for reproducibility)
     seed_base = int(rng.integers(1e9))
+    # seed_base = 436717389
     crashed, ts = run_episode(env_id, current_cfg, policy, defaults, seed_base)
+    ts.append(ts[-1])
+    ts[-1]['crashed'] = crashed
+
+    # record_video_episode(env_id, current_cfg, policy, defaults, seed_base, out_dir="videos")
+
     obj = compute_objectives_from_time_series(ts)
     cur_fit = compute_fitness(obj)
 
@@ -300,8 +309,6 @@ def hill_climb(
 
     history = [best_fit]
 
-    print(f"Initial configuration: {best_cfg['initial_spacing']}" )
-
     # TODO (students): implement HC loop
     # - generate neighbors
     # - evaluate
@@ -309,7 +316,7 @@ def hill_climb(
     # - accept if improved
     # - early stop on crash (optional)
     stagnation_counter = 0
-    stagnation_limit = 3
+    stagnation_limit = 20
     for i in range(1, iterations + 1):
         print(f"Iteration {i}, best fitness so far: {best_fit}")
 
@@ -324,10 +331,14 @@ def hill_climb(
             seed_eval = int(rng.integers(1e9))
             crashed, ts = run_episode(env_id, nn, policy, defaults, seed_eval)
 
+            # fix the crashing issue
+            ts.append(ts[-1])
+            ts[-1]['crashed'] = crashed
+
             obj = compute_objectives_from_time_series(ts)
             fit = compute_fitness(obj)
 
-            print(f"nn spacing: {nn['initial_spacing']}, fitness: {fit}, obj: {obj}")
+            print(f"fitness: {fit}, obj: {obj}")
 
             if fit <= best_neighbor_fit:
                 best_neighbor_cfg = nn
@@ -345,6 +356,7 @@ def hill_climb(
                 best_obj = dict(best_neighbor_obj)
                 best_seed_base = seed_eval
                 improved_global_best = True
+
         if improved_global_best:
             stagnation_counter = 0
         else:
