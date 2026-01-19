@@ -78,6 +78,9 @@ class GoodModel:
 
 
 if __name__ == '__main__':
+    #import os
+    #cwd = os.path.join(os.getcwd(), 'assignment1', 'team2')
+    #os.chdir(cwd)
     info_df = pd.read_csv('../data/data_description.csv', encoding='windows-1252', index_col=0)
     cols_ids = list(range(1, 24)) + [58, 59, 65, 66, 67, 216, 217] + list(range(74, 92)) + list(
         range(92, 154)) + list(range(218, 253)) + list(range(283, 305))

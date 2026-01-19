@@ -12,7 +12,7 @@ class RandomSearch:
         self.policy = policy
         self.defaults = defaults
 
-    def run_search(self, n_scenarios=50, n_eval=1, seed=42):
+    def run_search(self, n_scenarios=18, n_eval=1, seed=42):
         print(f"Running Random Search for {n_scenarios} scenarios...")
         rng = np.random.default_rng(seed)
         crash_log = []

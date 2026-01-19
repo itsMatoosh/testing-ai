@@ -1,6 +1,7 @@
 import os
 import pickle
 
+import numpy as np
 import pandas as pd
 from sklearn.metrics import (
     precision_score,
@@ -11,7 +12,8 @@ from sklearn.metrics import (
 
 import onnxruntime as rt
 import matplotlib.pyplot as plt
-
+import matplotlib
+matplotlib.use("TkAgg")
 from sklearn.metrics import accuracy_score
 
 from partition import *
@@ -64,9 +66,13 @@ def test_partition(df, model, column_name, threshold=None):
     greater_positive = sum(y_pred_grater)
     smaller_positive = sum(y_pred_smaller)
 
-    # print(greater_positive, smaller_positive)
+    total_grater = len(y_pred_grater)
+    total_smaller = len(y_pred_smaller)
 
-    return greater_positive, smaller_positive
+    # print(greater_positive, smaller_positive)
+    if total_grater == 0 or total_smaller == 0:
+        return 0, 0
+    return greater_positive/total_grater, smaller_positive/total_smaller
 
 
 def test_model(model, columns, df):
@@ -75,9 +81,10 @@ def test_model(model, columns, df):
         greater_positive, smaller_positive = test_partition(df, model, col, None)
         model1_results[col] = (greater_positive, smaller_positive)
     # check the average difference
-    diffs = [abs(g - s) for g, s in model1_results.values()]
+    diffs = [abs(g - s) for g, s in model1_results.values() if g +s >0]
 
     return diffs, abs(np.mean(diffs))
+
 
 def classical_ml_evaluation(model, df):
     """
@@ -104,6 +111,8 @@ def classical_ml_evaluation(model, df):
 
 if __name__ == "__main__":
     # generate bad columns
+    cwd = os.path.join(os.getcwd(), 'assignment1', 'team2')
+    os.chdir(cwd)
     info_df = pd.read_csv('../data/data_description.csv', encoding='windows-1252', index_col=0)
     cols_ids = list(range(1, 24)) + [58, 59, 65, 66, 67, 216, 217] + list(range(74, 92)) + list(
         range(92, 154)) + list(range(218, 253)) + list(range(283, 305))
@@ -121,10 +130,13 @@ if __name__ == "__main__":
         smaller_positive = sum(smaller['checked'])
         diffs.append(abs(greater_positive - smaller_positive))
     print('Data average absolute difference:', np.mean(diffs))"""
-    path_to_diffs = 'data/diffs.pkl'
+    path_to_diffs = 'data/diffs_t1.pkl'
     # path_to_diffs = 'data/diffs_local.pkl'
     model_1 = rt.InferenceSession('../team1/model_1.onnx')
     model_2 = rt.InferenceSession('../team1/model_2.onnx')
+
+    # model_1 = rt.InferenceSession('models/good_model.onnx')
+    # model_2 = rt.InferenceSession('models/bad_model.onnx')
 
     metrics_1 = classical_ml_evaluation(model_1, test_df)
     metrics_2 = classical_ml_evaluation(model_2, test_df)
@@ -151,16 +163,34 @@ if __name__ == "__main__":
         print('Model 2 average absolute difference:', np.mean(diffs2))
 
     fig, axs = plt.subplots(2, 1, figsize=(12, 6))
-    axs[0].hist(diffs1, bins=20, color='blue', alpha=0.7)
+    bin_edges = np.arange(0, 0.2, 0.01)
+    axs[0].hist(diffs1, bins=bin_edges, color='blue', alpha=0.7)
     axs[0].set_title('Model 1 Absolute Differences')
     axs[0].set_ylabel('Frequency')
-    axs[1].hist(diffs2, bins=20, color='green', alpha=0.7)
+
+    axs[1].hist(diffs2, bins=bin_edges, color='green', alpha=0.7)
     axs[1].set_title('Model 2 Absolute Differences')
     axs[1].set_xlabel('Absolute Difference')
     axs[1].set_ylabel('Frequency')
 
+    mean1 = np.mean(diffs1)
+    mean2 = np.mean(diffs2)
+
+    axs[0].axvline(mean1, color='red', linestyle='--', linewidth=2,
+                   label=f"Mean = {mean1:.4f}")
+
+    axs[1].axvline(mean2, color='red', linestyle='--', linewidth=2,
+                   label=f"Mean = {mean2:.4f}")
+
+    axs[0].legend()
+    axs[1].legend()
+
+    fig.canvas.draw()
+    rgba_image = np.asarray(fig.canvas.buffer_rgba())
+    rgb_image = rgba_image[:, :, :3]
+
+    plt.savefig('data/differences_histogram_t1.png')
     plt.show()
-    plt.savefig('data/differences_histogram.png')
 
 
 
