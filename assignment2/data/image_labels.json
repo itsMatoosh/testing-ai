@@ -7,6 +7,7 @@
   {"image": "bubble.jpeg", "label": "bubble"},
   {"image": "goblet.jpeg", "label": "goblet"},
   {"image": "hay.jpeg", "label": "hay"},
-  {"image": "water_bottle.jpeg", "label": "water jug"},
-  {"image": "viaduct.jpeg", "label": "viaduct"}
+  {"image": "water_bottle.jpeg", "label": "water_jug"},
+  {"image": "viaduct.jpeg", "label": "viaduct"},
+  {"image": "espresso.jpeg", "label": "espresso"}
 ]

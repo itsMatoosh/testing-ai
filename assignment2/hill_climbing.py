@@ -167,14 +167,22 @@ def hill_climb(
         (final_image, final_fitness)
     """
 
-    current_image = initial_seed
+    # Make a copy to avoid returning the original unchanged
+    current_image = initial_seed.copy()
     current_fitness = compute_fitness(current_image, model, target_label)
-    stagnation_limit = 20
+    
+    # Track the best perturbation found (even if attack doesn't fully succeed)
+    best_ever_image = current_image.copy()
+    best_ever_fitness = current_fitness
+    
+    stagnation_limit = 40
     stagnation_counter = 0
 
     # assignment defines succes as number 1 being nto correct, negative fitenss
     # so base threshold is 0, bigger negative is more restrictive
     threshold = 0
+    
+    print(f"Initial fitness: {current_fitness:.4f}")
 
     for iteration in range(iterations):
         neighbors = mutate_seed(current_image, epsilon, initial_seed)
@@ -183,8 +191,13 @@ def hill_climb(
         best_image, best_fitness = select_best(candidates, model, target_label)
 
         if best_fitness < current_fitness:
-            current_image = best_image
+            current_image = best_image.copy()
             current_fitness = best_fitness
+            
+            # Update best ever found
+            if current_fitness < best_ever_fitness:
+                best_ever_image = current_image.copy()
+                best_ever_fitness = current_fitness
 
             stagnation_counter = 0
 
@@ -194,13 +207,20 @@ def hill_climb(
                 break
 
         else:
+            # Even without improvement, check if any neighbor is better than best_ever
+            if best_fitness < best_ever_fitness:
+                best_ever_image = best_image.copy()
+                best_ever_fitness = best_fitness
+                
             stagnation_counter += 1
             if stagnation_counter >= stagnation_limit:
                 print(f"Stopping early due to stagnation at iteration {iteration+1}.")
                 break
             print(f"Iteration {iteration+1}: No improvement.")
 
-    return current_image, current_fitness
+    # Return the best perturbation found throughout the search
+    print(f"Final best fitness: {best_ever_fitness:.4f}")
+    return best_ever_image, best_ever_fitness
 
 
 # ============================================================
@@ -231,9 +251,9 @@ if __name__ == "__main__":
     print(f"Target label: {target_label}")
 
     img = load_img(image_path)
-    plt.imshow(img)
-    plt.title("Original image")
-    plt.show()
+    # plt.imshow(img)
+    # plt.title("Original image")
+    # plt.show()
 
     img_array = img_to_array(img)
     seed = img_array.copy()
@@ -257,10 +277,10 @@ if __name__ == "__main__":
 
     print("\nFinal fitness:", final_fitness)
 
-    plt.imshow(array_to_img(final_img))
-    plt.title(f"Adversarial Result — fitness={final_fitness:.4f}")
-    plt.savefig(f"adversarial_result_{time.time()}.png")
-    plt.show()
+    # plt.imshow(array_to_img(final_img))
+    # plt.title(f"Adversarial Result — fitness={final_fitness:.4f}")
+    # plt.savefig(f"adversarial_result_{time.time()}.png")
+    # plt.show()
 
     # Print final predictions
     final_preds = model.predict(np.expand_dims(final_img, axis=0))
