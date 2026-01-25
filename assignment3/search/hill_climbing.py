@@ -184,6 +184,12 @@ def mutate_config(
     params_to_mutate = rng.choice(
         mutable_params, size=num_mutations, replace=False
     )
+
+    # ensure initial_lane_id is always last (after lanes_count)
+    if "lanes_count" in params_to_mutate:
+        params_to_mutate = np.setdiff1d(params_to_mutate, ["lanes_count"])
+        params_to_mutate = np.append(params_to_mutate, "lanes_count")
+    
     for param in params_to_mutate:
         spec = param_spec[param]
         current_value = cfg_copy[param]
@@ -196,18 +202,7 @@ def mutate_config(
             else:
                 sigma = 0.4 * span
             new_value = rng.normal(current_value, sigma)
-
         elif spec["type"] == "int":
-            # why only +-1? we can do steps based on min max
-            step = rng.choice([-1, 1])
-            new_value = current_value + step
-
-        else:
-            continue
-
-        new_value = np.clip(new_value, spec["min"], spec["max"])
-
-        if spec["type"] == "int":
             if param == "vehicles_count":
                 step = rng.integers(3, 8) * rng.choice([-1, 1])
                 new_value = current_value + step
@@ -217,15 +212,21 @@ def mutate_config(
                 new_value = current_value + step
 
             elif param == "initial_lane_id":
-                # relocate ego vehicle agressively
+                # relocate ego vehicle aggressively
                 new_value = rng.integers(0, cfg_copy["lanes_count"])
-                cfg_copy[param] = int(new_value)
+
+                # make sure the new value is within the bounds
+                new_value = np.clip(new_value, 0, cfg_copy["lanes_count"] - 1)
                 continue
             else:
+                # why only +-1? we can do steps based on min max
                 step = rng.choice([-1, 1])
                 new_value = current_value + step
+        else:
+            continue
 
-        #debug print statmement
+        # ensure the new value is within the bounds
+        new_value = np.clip(new_value, spec["min"], spec["max"])
         cfg_copy[param] = new_value
 
     # if lanes_count changed, ensure the initial_lane_id is valid
