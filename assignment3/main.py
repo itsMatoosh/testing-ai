@@ -12,26 +12,33 @@ def main():
 
     print(param_spec)
     print(base_cfg)
+    n_tests = 20
+    crash_iterations = []
+    for i in range(n_tests):
+        print("==== Test ", i+1, " ====")
+        search = RandomSearch(env_id, base_cfg, param_spec, policy, defaults)
+        crash_iteration = search.run_search(seed=None)
+        crash_iterations.append(crash_iteration)
+    print(crash_iterations)
 
-    search = RandomSearch(env_id, base_cfg, param_spec, policy, defaults)
-    # crashes = search.run_search()
-    # print(crashes)
+    n_evaluations = []
+    for i in range(n_tests):
+        print("==== Hill Climb Test ", i+1, " ====")
+        hc = hill_climb(
+            env_id,
+            base_cfg,
+            param_spec,
+            policy,
+            defaults,
+            seed=None,
+            iterations=50,
+            neighbors_per_iter=5,
+        )
+        n_evaluations.append(hc['n_eval'])
 
-    hc = hill_climb(
-        env_id,
-        base_cfg,
-        param_spec,
-        policy,
-        defaults,
-        seed=42,
-        iterations=50,
-        neighbors_per_iter=5,
-    )
+    print(n_evaluations)
+    print(crash_iterations)
 
-    # print(f"✅ Found {len(crashes)} crashes.")
-    print(hc)
-    #if crashes:
-    #    print(crashes)
 
 if __name__ == "__main__":
     main()

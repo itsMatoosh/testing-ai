@@ -318,6 +318,7 @@ def hill_climb(
     # - early stop on crash (optional)
     stagnation_counter = 0
     stagnation_limit = 20
+    n_eval = 1
     for i in range(1, iterations + 1):
         print(f"Iteration {i}, best fitness so far: {best_fit}")
 
@@ -331,6 +332,7 @@ def hill_climb(
 
             seed_eval = int(rng.integers(1e9))
             crashed, ts = run_episode(env_id, nn, policy, defaults, seed_eval)
+            n_eval += 1
 
             # fix the crashing issue
             ts.append(ts[-1])
@@ -385,5 +387,6 @@ def hill_climb(
         "best_objectives": best_obj,
         "best_fitness": best_fit,
         "best_seed_base": best_seed_base,
-        "history": history
+        "history": history,
+        "n_eval": n_eval
     }

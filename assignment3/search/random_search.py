@@ -12,11 +12,10 @@ class RandomSearch:
         self.policy = policy
         self.defaults = defaults
 
-    def run_search(self, n_scenarios=18, n_eval=1, seed=42):
+    def run_search(self, n_scenarios=200, n_eval=1, seed=42):
         print(f"Running Random Search for {n_scenarios} scenarios...")
         rng = np.random.default_rng(seed)
         crash_log = []
-
         for i in trange(n_scenarios, desc="Random search"):
             cfg = self.sample_random_config(rng)
             for j in range(n_eval):
@@ -25,6 +24,7 @@ class RandomSearch:
 
                 if crashed:
                     print(f"💥 Collision: scenario {i}, seed={s}")
+                    return i+1
                     crash_log.append({"cfg": copy.deepcopy(cfg), "seed": s})
                     record_video_episode(self.env_id, cfg, self.policy, self.defaults, s, out_dir="videos")
                     break
@@ -32,6 +32,8 @@ class RandomSearch:
                     print(f"No Crash: scenario {i}, seed={s}")
                     # crash_log.append({"cfg": copy.deepcopy(cfg), "seed": s})
                     # record_video_episode(self.env_id, cfg, self.policy, self.defaults, s, out_dir="videos")
+
+
         return crash_log
 
     def sample_random_config(self, rng):
