@@ -1,5 +1,6 @@
 import json
 import os
+import time
 import numpy as np
 import torch
 from torchvision.utils import save_image
@@ -17,6 +18,8 @@ from PIL import Image
 
 from keras.utils import array_to_img, load_img, img_to_array
 from hill_climbing import hill_climb
+
+start_time = time.time()
 
 # -----------------------------
 # Utility: parse Imagenet prediction
@@ -59,12 +62,14 @@ EPS = 0.30          # This can be tuned
 # ================================================================
 # 6. Output directory
 # ================================================================
-OUTDIR = "hill_climb_results"
+OUTDIR = "attack_results"
 os.makedirs(OUTDIR, exist_ok=True)
 
 # ================================================================
 # 7. Run attacks for every image from the JSON file
 # ================================================================
+total_hc_time = 0.0
+
 for entry in tqdm(items, desc="Running attacks"):
     image_file = entry["image"]
     human_label = entry["label"]  # e.g. "goldfish"
@@ -104,7 +109,11 @@ for entry in tqdm(items, desc="Running attacks"):
     # =====================================================
     # hill climb attack Attack
     # =====================================================
+    hc_start = time.time()
     x_hill, x_fit = hill_climb(x, model, target_label=human_label, epsilon=EPS)
+    hc_end = time.time()
+    total_hc_time += hc_end - hc_start
+
     out_hill = model.predict(np.expand_dims(x_hill, axis=0))
     # pred_hill, prob_hill = parse_prediction(out_fgm, imagenet_labels)
 
@@ -114,16 +123,23 @@ for entry in tqdm(items, desc="Running attacks"):
     x_hill = x_hill/255
     img_tensor = torch.from_numpy(x_hill).permute(2, 0, 1)
 
-    save_image(img_tensor, os.path.join(OUTDIR, f"{image_file}_hill.png"))
+    save_image(img_tensor, os.path.join(OUTDIR, f"{image_file}_hc.png"))
 
-    print(f"FGM prediction: {pred_hill} ({prob_hill:.3f})")
+    print(f"HC prediction: {pred_hill} ({prob_hill:.3f})")
 
     # =====================================================
     # Summary for this image
     # =====================================================
     if true_idx is not None:
         print("\nCorrect label index:", true_idx)
-        print("Clean correct?", imagenet_labels.index(pred_clean) == true_idx)
-        print("hill correct?", imagenet_labels.index(pred_hill) == true_idx)
+        print("Clean correct?", imagenet_labels.index(pred_clean.replace("_", " ")) == true_idx)
+        print("hc correct?", imagenet_labels.index(pred_hill.replace("_", " ")) == true_idx)
 
     print("------------------------------------------------------")
+
+end_time = time.time()
+elapsed_time = end_time - start_time
+print(f"\n======================================================")
+print(f"Hill Climb attack time: {total_hc_time:.2f} seconds ({total_hc_time/60:.2f} minutes)")
+print(f"Total execution time: {elapsed_time:.2f} seconds ({elapsed_time/60:.2f} minutes)")
+print(f"======================================================")

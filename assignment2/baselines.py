@@ -1,5 +1,6 @@
 import json
 import os
+import time
 import numpy as np
 import torch
 from torchvision.utils import save_image
@@ -8,6 +9,8 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import torchvision.transforms as transforms
 from PIL import Image
+
+start_time = time.time()
 
 from cleverhans.torch.attacks.fast_gradient_method import fast_gradient_method
 from cleverhans.torch.attacks.projected_gradient_descent import projected_gradient_descent
@@ -70,6 +73,9 @@ os.makedirs(OUTDIR, exist_ok=True)
 # ================================================================
 # 7. Run attacks for every image from the JSON file
 # ================================================================
+total_fgm_time = 0.0
+total_pgd_time = 0.0
+
 for entry in tqdm(items, desc="Running attacks"):
     image_file = entry["image"]
     human_label = entry["label"]  # e.g. "goldfish"
@@ -106,7 +112,11 @@ for entry in tqdm(items, desc="Running attacks"):
     # =====================================================
     # FGM Attack
     # =====================================================
+    fgm_start = time.time()
     x_fgm = fast_gradient_method(net, x, EPS, np.inf)
+    fgm_end = time.time()
+    total_fgm_time += fgm_end - fgm_start
+
     out_fgm = net(x_fgm)
     pred_fgm, prob_fgm = parse_prediction(out_fgm, imagenet_labels)
 
@@ -117,9 +127,12 @@ for entry in tqdm(items, desc="Running attacks"):
     # =====================================================
     # PGD Attack
     # =====================================================
+    pgd_start = time.time()
     x_pgd = projected_gradient_descent(
         net, x, EPS, PGD_STEP_SIZE, PGD_STEPS, np.inf
     )
+    pgd_end = time.time()
+    total_pgd_time += pgd_end - pgd_start
 
     out_pgd = net(x_pgd)
     pred_pgd, prob_pgd = parse_prediction(out_pgd, imagenet_labels)
@@ -138,3 +151,11 @@ for entry in tqdm(items, desc="Running attacks"):
         print("PGD correct?", imagenet_labels.index(pred_pgd) == true_idx)
 
     print("------------------------------------------------------")
+
+end_time = time.time()
+elapsed_time = end_time - start_time
+print(f"\n======================================================")
+print(f"FGM attack time: {total_fgm_time:.2f} seconds ({total_fgm_time/60:.2f} minutes)")
+print(f"PGD attack time: {total_pgd_time:.2f} seconds ({total_pgd_time/60:.2f} minutes)")
+print(f"Total execution time: {elapsed_time:.2f} seconds ({elapsed_time/60:.2f} minutes)")
+print(f"======================================================")
